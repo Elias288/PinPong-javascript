@@ -12,7 +12,7 @@
 
     self.Board.prototype = {
         get elements(){
-            var elements = this.bars
+            var elements = this.bars.map(function(bar){ return bar })
             elements.push(this.ball)
             return elements
         }
@@ -25,9 +25,38 @@
         this.radius = radius
         this.speed_y = 0
         this.speed_x = 3
+        this.speed = 5
+        this.board = board
+        this.direction = 1
+        this.bounce_angle = 0
+        this.max_bounce_angle = Math.PI / 12
 
         board.ball = this
         this.kind = "circle"
+
+    }
+    self.Ball.prototype = {
+        move: function(){
+            this.x += (this.speed_x * this.direction)
+            this.y += (this.speed_y)
+        },
+        get width(){
+            return this.radius * 2
+        },
+        get height(){
+            return this.radius * 2
+        },
+        collision: function(){
+            var relative_intersect_y = ( bar.y + (bar.height / 2) ) - this.y
+            var normalized_intersect_y = relative_intersect_y / (bar.height / 2)
+
+            this.bounce_angle = normalized_intersect_y * this.max_bounce_angle
+            this.speed_y = this.speed * -Math.sin(this.bounce_angle)
+            this.speed_x = this.speed * Math.cos(this.bounce_angle)
+
+            if (this.x > (this.board.width / 2)) this.direction = -1
+            else this.direction = 1
+        }
     }
 })();
 // BARRA
@@ -42,7 +71,7 @@
         this.board.bars.push(this)
         // para saber que tiene que dibujar el canvasa
         this.kind = "rectangle"
-        this.speed = 20
+        this.speed = 10
     }
 
     self.Bar.prototype = {
@@ -67,7 +96,8 @@
 
     self.BoardView.prototype = {
         clean: function(){
-            this.ctx.clearRect(0, 0, this.board.width, this.board.height)
+            setTimeout(() => {this.ctx.clearRect(0, 0, this.board.width, this.board.height)}, 200)
+            
         },
         draw: function(){
             for(var i = this.board.elements.length - 1; i >= 0; i--) {
@@ -78,9 +108,42 @@
         },
         play: function(){
             this.draw()
-            // this.clean()
-            setTimeout(() => {this.clean()}, 500)
+            this.clean()
+            this.check_collisions()
+            this.board.ball.move()
+        },
+        check_collisions: function(){
+            for (var i = this.board.bars.length - 1; i >= 0; i--){
+                var bar = this.board.bars[i]
+                if(hit(bar, this.board.ball)){
+                    this.board.ball.collision(bar)
+                }
+            }
         }
+    }
+
+    function hit(a, b){
+        var hit = false
+
+        if (b.x + b.width >= a.x && b.x < a.x + a.width){
+            if (b.y + b.height >= a.y && b.y < a.y + a.height){
+                hit = true
+            }
+        }
+
+        if (b.x <= a.x && b.x + b.width >= a.x + a.width){
+            if (b.y <= a.y && b.y + b.height >= a.y + a.height){
+                hit = true
+            }
+        }
+
+        if (a.x <= b.x && a.x + a.width >= b.x + b.width){
+            if (a.y <= b.y && a.height >= b.y + b.height){
+                hit = true
+            }
+        }
+
+        return hit
     }
 
     function draw (ctx, element) {
