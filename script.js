@@ -4,7 +4,7 @@
     self.Board = function(width, height){
         this.width = width
         this.height = height
-        this.playing = true
+        this.playing = false
         this.game_over = false
         this.bars = []
         this.ball = null
@@ -22,10 +22,11 @@
             //this.bars.map(b => b.reset())
         },
         reset_game: function(){ // cuando hay ganador
-            this.playing = true
+            this.playing = false
             this.game_over = false
             this.bars.map(b => b.reset_score())
             this.ball.reset()
+            modal.style.opacity = 1
         }
     }
 })();
@@ -81,8 +82,8 @@
             }
         },
         reset: function(){
-            this.x = 350
-            this.y = 100
+            this.x = this.board.width / 2
+            this.y = this.board.height / 2
             this.bounce_angle = 0
         }
     }
@@ -148,8 +149,8 @@
 
     self.BoardView.prototype = {
         clean: function(){
-            setTimeout(() => {this.ctx.clearRect(0, 0, this.board.width, this.board.height)}, 100)
-            
+            //setTimeout(() => {this.ctx.clearRect(0, 0, this.board.width, this.board.height)}, 100)
+            this.ctx.clearRect(0, 0, this.board.width, this.board.height)
         },
         draw: function(){
             for(var i = this.board.elements.length - 1; i >= 0; i--) {
@@ -167,12 +168,12 @@
             this.ctx.closePath();
         },
         play: function(){
-            this.draw()
             if (this.board.playing && !this.board.game_over){
                 this.clean()
                 this.check_collisions()
                 this.board.ball.move()
             }
+            this.draw()
         },
         check_collisions: function(){
             // chequea las colisiones con las paredes
@@ -259,34 +260,50 @@
     }
 })();
 
-var board = new Board(800,400)
 var canvas = document.getElementById('canvas')
 var score1 = document.getElementById('jugador1')
 var score2 = document.getElementById('jugador2')
-var bar = new Bar(1, 735, 100, 40, 100, board, score1)
-var bar2 = new Bar(2, 20, 100, 40, 100, board, score2)
+var play = document.getElementById('play')
+var modal = document.getElementById('modal')
+
+var board = new Board(800,400)
+var bar = new Bar(1, 20, board.height/2 - 50, 20, 100, board, score1)
+var bar2 = new Bar(2, 760, board.height/2 - 50, 20, 100, board, score2)
 var board_view = new BoardView(canvas, board)
-var ball = new Ball(350, 100, 10, board)
+var ball = new Ball(board.width/2, board.height/2, 10, board)
+
+play.addEventListener('click', () => {
+    modal.style.opacity = 0
+    board.playing = true
+})
 
 document.addEventListener("keydown", evt => {
     evt.preventDefault()
     switch(evt.key){
         case "Down":
         case "ArrowDown":
-            bar.down()
+            bar2.down()
             break;
         case "Up":
         case "ArrowUp":
-            bar.up()
-            break;
-        case "s":
-            bar2.down()
-            break;
-        case "w":
             bar2.up()
             break;
+        case "s":
+            bar.down()
+            break;
+        case "w":
+            bar.up()
+            break;
         case "p":
-            board.playing == false ? board.playing = true : board.playing = false
+		    modal.style.opacity = 1
+			board.playing = false
+            break;
+        case "r":
+            modal.style.opacity == 1
+            board.playing == false
+            board_view.clean()
+            board.reset_game()
+            break;
     }
 })
 
