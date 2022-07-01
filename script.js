@@ -19,7 +19,7 @@
         },
         reset: function(){ // cuando la bola hace un punto
             this.ball.reset()
-            this.bars.map(b => b.reset())
+            //this.bars.map(b => b.reset())
         },
         reset_game: function(){ // cuando hay ganador
             this.playing = true
@@ -118,7 +118,7 @@
         scoreUp : function(){ // aumentar el puntaje de cada jugador
             if(this.board.playing && !this.board.game_over) {
                 this.score ++   
-                this.scoreBar.innerHTML = this.score
+                this.scoreBar.innerHTML = "Jugador" + this.id + " " + this.score
             } 
             if(this.score == 5) {
                 this.board.game_over = true
@@ -131,7 +131,7 @@
         },
         reset_score: function(){
             this.reset()
-            this.scoreBar.innerHTML = 0
+            this.scoreBar.innerHTML = "Jugador" + this.id + " " + 0
             this.score = 0
         }
     }
@@ -156,7 +156,15 @@
                 var el = this.board.elements[i]
                 draw(this.ctx, el)
             }
+            this.ctx.beginPath();
+            this.ctx.moveTo((this.board.width / 2), 0);
+            this.ctx.lineTo((this.board.width / 2), this.board.height);
+            this.ctx.setLineDash([10, 10]);
+            this.ctx.strokeStyle = "#FFFFFF";
+            this.ctx.lineWidth = 5;
+            this.ctx.stroke();
             
+            this.ctx.closePath();
         },
         play: function(){
             this.draw()
