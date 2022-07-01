@@ -4,7 +4,7 @@
     self.Board = function(width, height){
         this.width = width
         this.height = height
-        this.playing = false
+        this.playing = true
         this.game_over = false
         this.bars = []
         this.ball = null
@@ -18,14 +18,15 @@
         }
     }
 })();
+// BALL
 (function(){
     self.Ball = function(x, y, radius, board){
         this.x = x
         this.y = y
         this.radius = radius
         this.speed_y = 0
-        this.speed_x = 3
-        this.speed = 5
+        this.speed_x = 4
+        this.speed = 4
         this.board = board
         this.direction = 1
         this.bounce_angle = 0
@@ -46,8 +47,10 @@
         get height(){
             return this.radius * 2
         },
-        collision: function(){
+        collisionBar: function(bar){
             var relative_intersect_y = ( bar.y + (bar.height / 2) ) - this.y
+            
+            console.log("rel: "+ relative_intersect_y + " y: " + this.y);
             var normalized_intersect_y = relative_intersect_y / (bar.height / 2)
 
             this.bounce_angle = normalized_intersect_y * this.max_bounce_angle
@@ -56,6 +59,15 @@
 
             if (this.x > (this.board.width / 2)) this.direction = -1
             else this.direction = 1
+        },
+        collision: function(i){
+            if (i == 1){
+                this.speed_y = this.speed * Math.sin(this.max_bounce_angle)
+                this.speed_x = this.speed * Math.cos(this.max_bounce_angle)
+            }else{
+                this.speed_y = this.speed * -Math.sin(this.max_bounce_angle)
+                this.speed_x = this.speed * Math.cos(this.max_bounce_angle)
+            }
         }
     }
 })();
@@ -71,19 +83,18 @@
         this.board.bars.push(this)
         // para saber que tiene que dibujar el canvasa
         this.kind = "rectangle"
-        this.speed = 10
+        this.speed = 15
     }
 
     self.Bar.prototype = {
         down : function() {
-            this.y += this.speed
+            if (this.board.playing && this.y + (this.height) < this.board.height) this.y += this.speed
         },
         up : function() {
-            this.y -= this.speed
+            if(this.board.playing && this.y > 0) this.y -= this.speed
         }
     }
 })();
-
 // VISTA DEL JUEGO
 (function(){
     self.BoardView = function(canvas, board){
@@ -97,7 +108,6 @@
     self.BoardView.prototype = {
         clean: function(){
             setTimeout(() => {this.ctx.clearRect(0, 0, this.board.width, this.board.height)}, 200)
-            
         },
         draw: function(){
             for(var i = this.board.elements.length - 1; i >= 0; i--) {
@@ -108,21 +118,35 @@
         },
         play: function(){
             this.draw()
-            this.clean()
-            this.check_collisions()
-            this.board.ball.move()
+            if (this.board.playing){
+                this.clean()
+                this.check_collisions()
+                this.board.ball.move()
+            }
         },
         check_collisions: function(){
+            // chequea las colisiones con las paredes
+            var i = hit(this.board, this.board.ball)
+            if(i == 1 || i == 2){
+                this.board.ball.collision(i)
+            }
+
+            // chequea las colisiones que dan puntos
+            if (this.board.ball.x >= this.board.width || this.board.ball.x <= 0){
+                this.board.playing = false
+            }
+
+            // chequea la colisiones con las barras
             for (var i = this.board.bars.length - 1; i >= 0; i--){
                 var bar = this.board.bars[i]
-                if(hit(bar, this.board.ball)){
-                    this.board.ball.collision(bar)
+                if(hitBarra(bar, this.board.ball)){
+                    this.board.ball.collisionBar(bar)
                 }
             }
         }
     }
 
-    function hit(a, b){
+    function hitBarra(a, b){
         var hit = false
 
         if (b.x + b.width >= a.x && b.x < a.x + a.width){
@@ -141,6 +165,22 @@
             if (a.y <= b.y && a.height >= b.y + b.height){
                 hit = true
             }
+        }
+
+        return hit
+    }
+
+    function hit(a, b){
+        // b = ball
+        // a = board
+        var hit = 0
+        // si la posicion de la bola es menor igual al borde superior de la cancha
+        if (b.y < 0 + b.height){
+            hit = 1
+        }
+        // si la posicion de la bola es mayor igual al borde inferior de la cancha
+        if (b.y + b.width >= a.height){
+            hit = 2
         }
 
         return hit
